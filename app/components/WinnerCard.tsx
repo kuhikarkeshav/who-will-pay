@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useRef } from "react";
+import QRCode from "qrcode";
 
 interface WinnerCardProps {
   winner: string;
@@ -19,7 +20,6 @@ const funnyMessages = [
   "got picked by fate! 🎲",
 ];
 
-// Viral share messages - randomized for freshness!
 const viralShareMessages = [
   "😂 Guess who is paying the bill today? 👉 {name} 💸 Better luck next time!",
   "🍕 {name} is today's sponsor! Everyone eat extra 🤣",
@@ -45,19 +45,17 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
   const randomMessage =
     funnyMessages[Math.floor(Math.random() * funnyMessages.length)];
 
-  // Get random viral share message
   const getViralMessage = () => {
     const template = viralShareMessages[Math.floor(Math.random() * viralShareMessages.length)];
     return template.replace("{name}", winner);
   };
 
-  // Generate beautiful shareable image
   const generateShareImage = async (): Promise<Blob> => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d")!;
 
     canvas.width = 1080;
-    canvas.height = 1080;
+    canvas.height = 1350;
 
     const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
     gradient.addColorStop(0, "#FF6B35");
@@ -110,35 +108,69 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
     ctx.font = "600 45px Arial";
     ctx.fillText(randomMessage, canvas.width / 2, rectY + rectHeight + 80);
 
-    ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
-    const tryRectY = 850;
-    const tryRectHeight = 150;
+    // Draw QR code section
+    ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+    const qrRectY = 780;
+    const qrRectHeight = 300;
     ctx.beginPath();
-    ctx.moveTo(rectX + radius, tryRectY);
-    ctx.lineTo(rectX + rectWidth - radius, tryRectY);
-    ctx.quadraticCurveTo(rectX + rectWidth, tryRectY, rectX + rectWidth, tryRectY + radius);
-    ctx.lineTo(rectX + rectWidth, tryRectY + tryRectHeight - radius);
-    ctx.quadraticCurveTo(rectX + rectWidth, tryRectY + tryRectHeight, rectX + rectWidth - radius, tryRectY + tryRectHeight);
-    ctx.lineTo(rectX + radius, tryRectY + tryRectHeight);
-    ctx.quadraticCurveTo(rectX, tryRectY + tryRectHeight, rectX, tryRectY + tryRectHeight - radius);
-    ctx.lineTo(rectX, tryRectY + radius);
-    ctx.quadraticCurveTo(rectX, tryRectY, rectX + radius, tryRectY);
+    ctx.moveTo(rectX + radius, qrRectY);
+    ctx.lineTo(rectX + rectWidth - radius, qrRectY);
+    ctx.quadraticCurveTo(rectX + rectWidth, qrRectY, rectX + rectWidth, qrRectY + radius);
+    ctx.lineTo(rectX + rectWidth, qrRectY + qrRectHeight - radius);
+    ctx.quadraticCurveTo(rectX + rectWidth, qrRectY + qrRectHeight, rectX + rectWidth - radius, qrRectY + qrRectHeight);
+    ctx.lineTo(rectX + radius, qrRectY + qrRectHeight);
+    ctx.quadraticCurveTo(rectX, qrRectY + qrRectHeight, rectX, qrRectY + qrRectHeight - radius);
+    ctx.lineTo(rectX, qrRectY + radius);
+    ctx.quadraticCurveTo(rectX, qrRectY, rectX + radius, qrRectY);
     ctx.closePath();
     ctx.fill();
 
+    // Generate and draw QR code
+    const websiteUrl = "https://whowillpaybill.netlify.app";
+    const qrCodeDataUrl = await QRCode.toDataURL(websiteUrl, {
+      width: 220,
+      margin: 1,
+      color: {
+        dark: "#000000",
+        light: "#FFFFFF",
+      },
+    });
+
+    const qrImage = new Image();
+    await new Promise((resolve) => {
+      qrImage.onload = resolve;
+      qrImage.src = qrCodeDataUrl;
+    });
+
+    const qrSize = 220;
+    const qrX = rectX + 70;
+    const qrY = qrRectY + (qrRectHeight - qrSize) / 2;
+    ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
+
+    // Draw text on the right side
+    ctx.fillStyle = "#FF6B35";
+    ctx.font = "bold 55px Arial";
+    ctx.textAlign = "left";
+    const textX = qrX + qrSize + 60;
+    const textY = qrRectY + qrRectHeight / 2;
+    
+    ctx.fillText("📱 Scan me", textX, textY - 20);
+    ctx.fillText("to try!", textX, textY + 50);
+
+    // Bottom message
     const funnyBottomMessages = [
       "Better luck next time! 😂",
       "Thanks for being generous! 🙏",
       "Your wallet will remember this! 💸",
-      "Time to treat your friends! 🍕",
-      "Congratulations... or not! 🎊",
-      "The bill gods have spoken! ⚡",
     ];
     const bottomMessage = funnyBottomMessages[Math.floor(Math.random() * funnyBottomMessages.length)];
 
-    ctx.fillStyle = "#FF6B35";
-    ctx.font = "bold 55px Arial";
-    ctx.fillText(bottomMessage, canvas.width / 2, tryRectY + 95);
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "bold 40px Arial";
+    ctx.textAlign = "center";
+    ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
+    ctx.shadowBlur = 8;
+    ctx.fillText(bottomMessage, canvas.width / 2, qrRectY + qrRectHeight + 70);
 
     return new Promise((resolve) => {
       canvas.toBlob((blob) => {
@@ -147,7 +179,6 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
     });
   };
 
-  // Share to WhatsApp with IMAGE + MESSAGE
   const shareToWhatsApp = async () => {
     setIsGeneratingImage(true);
     try {
@@ -157,21 +188,16 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
       const message = getViralMessage();
       const fullMessage = `${message}\n\n🎮 Try it yourself: https://whowillpaybill.netlify.app`;
 
-      // Try native share first (works best on mobile)
       if (navigator.share) {
         try {
-          // Most platforms don't support both files and text together
-          // So we share the file and copy text to clipboard
           await navigator.share({
             files: [file],
           });
           
-          // Copy message to clipboard for user to paste
           try {
             await navigator.clipboard.writeText(fullMessage);
-            alert("✅ Image shared successfully!\n\n📋 Message copied to clipboard - paste it in WhatsApp!\n\n" + fullMessage);
           } catch (clipErr) {
-            alert("✅ Image shared successfully!\n\n📝 Copy this message and paste in WhatsApp:\n\n" + fullMessage);
+            console.log("Clipboard copy failed");
           }
           
           setUsedNativeShare(true);
@@ -181,15 +207,12 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
           return;
         } catch (shareErr: any) {
           if (shareErr.name === 'AbortError') {
-            // User cancelled the share
             setIsGeneratingImage(false);
             return;
           }
-          // If share fails, continue to fallback
         }
       }
 
-      // Fallback: Download image and open WhatsApp with text
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -199,28 +222,18 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      // Copy message to clipboard
       try {
         await navigator.clipboard.writeText(fullMessage);
       } catch (clipErr) {
         console.error("Clipboard error:", clipErr);
       }
 
-      // Open WhatsApp with pre-filled message
       setTimeout(() => {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         if (isMobile) {
-          // Mobile: Open WhatsApp app
           window.location.href = `whatsapp://send?text=${encodeURIComponent(fullMessage)}`;
-          
-          // Alert user about the downloaded image
-          setTimeout(() => {
-            alert("✅ Image downloaded to your device!\n\n📲 WhatsApp opened with message - now attach the downloaded image!");
-          }, 500);
         } else {
-          // Desktop: Open WhatsApp Web
           window.open(`https://web.whatsapp.com/send?text=${encodeURIComponent(fullMessage)}`, "_blank");
-          alert("✅ Image downloaded!\n\n📲 WhatsApp Web opened with message - attach the downloaded image from your Downloads folder!");
         }
       }, 500);
 
@@ -236,7 +249,6 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
     }
   };
 
-  // Share to Instagram with IMAGE + MESSAGE
   const shareToInstagram = async () => {
     setIsGeneratingImage(true);
     try {
@@ -253,7 +265,6 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
             title: "Who Will Pay the Bill? 🍕",
           });
           await navigator.clipboard.writeText(shareText);
-          alert("📸 Image shared! Caption copied to clipboard - paste it in Instagram! 📋");
           setUsedNativeShare(true);
           setShowCopied(true);
           setTimeout(() => setShowCopied(false), 2000);
@@ -289,7 +300,6 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
         }
       }, 500);
 
-      alert(`📸 Image downloaded! Caption copied to clipboard!\n\nOpen Instagram, upload the image, and paste this caption:\n\n${shareText}`);
       setUsedNativeShare(false);
       setShowCopied(true);
       setTimeout(() => setShowCopied(false), 3000);
@@ -302,7 +312,6 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
     }
   };
 
-  // Share to Snapchat with IMAGE
   const shareToSnapchat = async () => {
     setIsGeneratingImage(true);
     try {
@@ -318,7 +327,6 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
             files: [file],
           });
           await navigator.clipboard.writeText(fullMessage);
-          alert("📸 Image shared! Message copied to clipboard - add it to your snap! 📋");
           setUsedNativeShare(true);
           setShowCopied(true);
           setTimeout(() => setShowCopied(false), 2000);
@@ -354,7 +362,6 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
         }
       }, 500);
 
-      alert(`📸 Image downloaded! Message copied to clipboard!\n\nOpen Snapchat, upload the image, and add this text:\n\n${fullMessage}`);
       setUsedNativeShare(false);
       setShowCopied(true);
       setTimeout(() => setShowCopied(false), 3000);
@@ -385,7 +392,6 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
         animate={{ y: 0, rotate: 0 }}
         className="bg-gradient-to-br from-yellow-400 via-orange-400 to-red-500 rounded-3xl p-8 sm:p-12 shadow-2xl max-w-lg w-full relative overflow-hidden my-8"
       >
-        {/* Decorative elements */}
         <motion.div
           animate={{
             rotate: 360,
@@ -476,7 +482,6 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
             </motion.div>
           )}
 
-          {/* Fun Share Preview */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -492,7 +497,6 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
             </p>
           </motion.div>
 
-          {/* Platform Share Buttons */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -500,7 +504,6 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
             className="mb-4"
           >
             <div className="grid grid-cols-3 gap-3 mb-3">
-              {/* WhatsApp Share */}
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -516,7 +519,6 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
                 </span>
               </motion.button>
 
-              {/* Instagram Share */}
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -532,7 +534,6 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
                 </span>
               </motion.button>
 
-              {/* Snapchat Share */}
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -549,9 +550,7 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
               </motion.button>
             </div>
 
-            {/* Success/Error Toasts */}
             <div className="relative h-0">
-              {/* Success Toast */}
               <AnimatePresence>
                 {showCopied && (
                   <motion.div
@@ -570,7 +569,6 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
                 )}
               </AnimatePresence>
 
-              {/* Error Toast */}
               <AnimatePresence>
                 {shareError && (
                   <motion.div
@@ -589,7 +587,6 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
             </div>
           </motion.div>
 
-          {/* Action Buttons */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
