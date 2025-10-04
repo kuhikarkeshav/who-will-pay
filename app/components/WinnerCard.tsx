@@ -51,28 +51,114 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
     return template.replace("{name}", winner);
   };
 
-  // Share to WhatsApp
-  const shareToWhatsApp = () => {
-    const message = getViralMessage();
-    const billText = billAmount ? `\n💰 Bill Amount: ₹${billAmount}\n` : "\n";
-    const fullMessage = `${message}${billText}\n🎮 Try it yourself: https://whowillpay.netlify.app`;
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(fullMessage)}`;
-    window.open(whatsappUrl, "_blank");
-    setShowCopied(true);
-    setUsedNativeShare(true);
-    setTimeout(() => setShowCopied(false), 2000);
+  // Share to WhatsApp with IMAGE
+  const shareToWhatsApp = async () => {
+    setIsGeneratingImage(true);
+    try {
+      const blob = await generateShareImage();
+      const file = new File([blob], "who-will-pay-winner.png", { type: "image/png" });
+
+      const message = getViralMessage();
+      const fullMessage = `${message}\n\nTry it yourself: https://whowillpaybill.netlify.app`;
+
+      // Try native share with image first (mobile)
+      if (navigator.share && navigator.canShare) {
+        const shareData = {
+          files: [file],
+          text: fullMessage,
+        };
+
+        if (navigator.canShare(shareData)) {
+          await navigator.share(shareData);
+          setUsedNativeShare(true);
+          setShowCopied(true);
+          setTimeout(() => setShowCopied(false), 2000);
+          setIsGeneratingImage(false);
+          return;
+        }
+      }
+
+      // Fallback: Download image and open WhatsApp with text
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "who-will-pay-winner.png";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      // Open WhatsApp with text
+      setTimeout(() => {
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(fullMessage)}`;
+        window.open(whatsappUrl, "_blank");
+      }, 500);
+
+      setUsedNativeShare(false);
+      setShowCopied(true);
+      setTimeout(() => setShowCopied(false), 3000);
+    } catch (error) {
+      console.error("WhatsApp share error:", error);
+      setShareError(true);
+      setTimeout(() => setShareError(false), 3000);
+    } finally {
+      setIsGeneratingImage(false);
+    }
   };
 
-  // Share to Twitter
-  const shareToTwitter = () => {
-    const message = getViralMessage();
-    const billText = billAmount ? `\nBill: ₹${billAmount} 💸` : "";
-    const fullMessage = `${message}${billText}\n\n🎮 Play now:`;
-    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(fullMessage)}&url=https://whowillpay.netlify.app`;
-    window.open(twitterUrl, "_blank");
-    setShowCopied(true);
-    setUsedNativeShare(true);
-    setTimeout(() => setShowCopied(false), 2000);
+  // Share to Twitter with IMAGE
+  const shareToTwitter = async () => {
+    setIsGeneratingImage(true);
+    try {
+      const blob = await generateShareImage();
+      const file = new File([blob], "who-will-pay-winner.png", { type: "image/png" });
+
+      const message = getViralMessage();
+      const fullMessage = `${message}\n\nPlay now: https://whowillpaybill.netlify.app`;
+
+      // Try native share with image first (mobile)
+      if (navigator.share && navigator.canShare) {
+        const shareData = {
+          files: [file],
+          text: fullMessage,
+        };
+
+        if (navigator.canShare(shareData)) {
+          await navigator.share(shareData);
+          setUsedNativeShare(true);
+          setShowCopied(true);
+          setTimeout(() => setShowCopied(false), 2000);
+          setIsGeneratingImage(false);
+          return;
+        }
+      }
+
+      // Fallback: Download image and open Twitter
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "who-will-pay-winner.png";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      // Open Twitter (user will need to manually attach the downloaded image)
+      setTimeout(() => {
+        const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(fullMessage)}`;
+        window.open(twitterUrl, "_blank");
+      }, 500);
+
+      setUsedNativeShare(false);
+      setShowCopied(true);
+      setTimeout(() => setShowCopied(false), 3000);
+    } catch (error) {
+      console.error("Twitter share error:", error);
+      setShareError(true);
+      setTimeout(() => setShareError(false), 3000);
+    } finally {
+      setIsGeneratingImage(false);
+    }
   };
 
   // Generate beautiful shareable image
@@ -168,7 +254,7 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
     // Draw website URL
     ctx.fillStyle = "#666666";
     ctx.font = "600 35px Arial";
-    ctx.fillText("whowillpay.netlify.app", canvas.width / 2, tryRectY + 120);
+    ctx.fillText("whowillpaybill.netlify.app", canvas.width / 2, tryRectY + 120);
 
     // Convert canvas to blob
     return new Promise((resolve) => {
@@ -365,10 +451,15 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={shareToWhatsApp}
-                className="px-4 py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex flex-col items-center justify-center gap-1"
+                disabled={isGeneratingImage}
+                className="px-4 py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex flex-col items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <span className="text-3xl">💬</span>
-                <span className="text-xs">WhatsApp</span>
+                <span className="text-3xl">
+                  {isGeneratingImage ? "⏳" : "💬"}
+                </span>
+                <span className="text-xs">
+                  {isGeneratingImage ? "Wait..." : "WhatsApp"}
+                </span>
               </motion.button>
 
               {/* Instagram Share */}
@@ -383,7 +474,7 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
                   {isGeneratingImage ? "⏳" : "📸"}
                 </span>
                 <span className="text-xs">
-                  {isGeneratingImage ? "Creating..." : "Instagram"}
+                  {isGeneratingImage ? "Wait..." : "Instagram"}
                 </span>
               </motion.button>
 
@@ -392,10 +483,15 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={shareToTwitter}
-                className="px-4 py-4 bg-gradient-to-r from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex flex-col items-center justify-center gap-1"
+                disabled={isGeneratingImage}
+                className="px-4 py-4 bg-gradient-to-r from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex flex-col items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <span className="text-3xl">🐦</span>
-                <span className="text-xs">Twitter</span>
+                <span className="text-3xl">
+                  {isGeneratingImage ? "⏳" : "🐦"}
+                </span>
+                <span className="text-xs">
+                  {isGeneratingImage ? "Wait..." : "Twitter"}
+                </span>
               </motion.button>
             </div>
 

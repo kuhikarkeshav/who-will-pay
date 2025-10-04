@@ -9,9 +9,11 @@ export const metadata: Metadata = {
   description: "A fun app to randomly decide who pays the bill among friends! Spin the wheel and see who gets lucky (or unlucky) 😂",
   keywords: "bill splitter, who pays, random picker, fun app, friends, restaurant bill",
   authors: [{ name: "Who Will Pay" }],
+  metadataBase: new URL("https://whowillpaybill.netlify.app"),
   openGraph: {
     title: "Who Will Pay the Bill? 🍕💸",
     description: "Spin the wheel and see who pays! Better luck next time 😂",
+    url: "https://whowillpaybill.netlify.app",
     type: "website",
     locale: "en_US",
     siteName: "Who Will Pay the Bill",
