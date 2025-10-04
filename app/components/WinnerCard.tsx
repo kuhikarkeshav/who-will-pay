@@ -348,7 +348,7 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
               Share this hilarious moment!
             </p>
             <p className="text-xs text-gray-700 italic">
-              "{getViralMessage()}"
+              &ldquo;{getViralMessage()}&rdquo;
             </p>
           </motion.div>
 
