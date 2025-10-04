@@ -51,7 +51,7 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
     return template.replace("{name}", winner);
   };
 
-  // Share to WhatsApp with IMAGE
+  // Share to WhatsApp with IMAGE + MESSAGE
   const shareToWhatsApp = async () => {
     setIsGeneratingImage(true);
     try {
@@ -59,7 +59,7 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
       const file = new File([blob], "who-will-pay-winner.png", { type: "image/png" });
 
       const message = getViralMessage();
-      const fullMessage = `${message}\n\nTry it yourself: https://whowillpaybill.netlify.app`;
+      const fullMessage = `${message}\n\n🎮 Try it yourself: https://whowillpaybill.netlify.app`;
 
       // Try native share with image first (mobile)
       if (navigator.share && navigator.canShare) {
@@ -78,7 +78,7 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
         }
       }
 
-      // Fallback: Download image and open WhatsApp with text
+      // Fallback: Download image and open WhatsApp directly
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -88,10 +88,15 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      // Open WhatsApp with text
+      // Open WhatsApp app directly with message
       setTimeout(() => {
-        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(fullMessage)}`;
-        window.open(whatsappUrl, "_blank");
+        const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(fullMessage)}`;
+        window.location.href = whatsappUrl;
+
+        // Fallback to web WhatsApp if app not installed
+        setTimeout(() => {
+          window.open(`https://wa.me/?text=${encodeURIComponent(fullMessage)}`, "_blank");
+        }, 1000);
       }, 500);
 
       setUsedNativeShare(false);
@@ -106,15 +111,15 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
     }
   };
 
-  // Share to Twitter with IMAGE
-  const shareToTwitter = async () => {
+  // Share to Snapchat with IMAGE
+  const shareToSnapchat = async () => {
     setIsGeneratingImage(true);
     try {
       const blob = await generateShareImage();
       const file = new File([blob], "who-will-pay-winner.png", { type: "image/png" });
 
       const message = getViralMessage();
-      const fullMessage = `${message}\n\nPlay now: https://whowillpaybill.netlify.app`;
+      const fullMessage = `${message}\n\n🎮 Play now: https://whowillpaybill.netlify.app`;
 
       // Try native share with image first (mobile)
       if (navigator.share && navigator.canShare) {
@@ -133,7 +138,7 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
         }
       }
 
-      // Fallback: Download image and open Twitter
+      // Fallback: Download image and try to open Snapchat
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -143,17 +148,22 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      // Open Twitter (user will need to manually attach the downloaded image)
+      // Try to open Snapchat app
       setTimeout(() => {
-        const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(fullMessage)}`;
-        window.open(twitterUrl, "_blank");
+        // Snapchat deep link (mobile)
+        window.location.href = "snapchat://";
+
+        // Fallback message
+        setTimeout(() => {
+          alert("Image downloaded! Open Snapchat and upload the image from your gallery 📸");
+        }, 1000);
       }, 500);
 
       setUsedNativeShare(false);
       setShowCopied(true);
       setTimeout(() => setShowCopied(false), 3000);
     } catch (error) {
-      console.error("Twitter share error:", error);
+      console.error("Snapchat share error:", error);
       setShareError(true);
       setTimeout(() => setShareError(false), 3000);
     } finally {
@@ -229,7 +239,7 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
     const message = randomMessage;
     ctx.fillText(message, canvas.width / 2, rectY + rectHeight + 80);
 
-    // Draw "Try it yourself!" section
+    // Draw funny bottom message section
     ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
     const tryRectY = 850;
     const tryRectHeight = 150;
@@ -246,15 +256,21 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
     ctx.closePath();
     ctx.fill();
 
-    // Draw "Try it yourself!" text
-    ctx.fillStyle = "#FF6B35";
-    ctx.font = "bold 50px Arial";
-    ctx.fillText("🎮 Try it yourself!", canvas.width / 2, tryRectY + 70);
+    // Array of funny bottom messages
+    const funnyBottomMessages = [
+      "Better luck next time! 😂",
+      "Thanks for being generous! 🙏",
+      "Your wallet will remember this! 💸",
+      "Time to treat your friends! 🍕",
+      "Congratulations... or not! 🎊",
+      "The bill gods have spoken! ⚡",
+    ];
+    const bottomMessage = funnyBottomMessages[Math.floor(Math.random() * funnyBottomMessages.length)];
 
-    // Draw website URL
-    ctx.fillStyle = "#666666";
-    ctx.font = "600 35px Arial";
-    ctx.fillText("whowillpaybill.netlify.app", canvas.width / 2, tryRectY + 120);
+    // Draw funny message
+    ctx.fillStyle = "#FF6B35";
+    ctx.font = "bold 55px Arial";
+    ctx.fillText(bottomMessage, canvas.width / 2, tryRectY + 95);
 
     // Convert canvas to blob
     return new Promise((resolve) => {
@@ -264,16 +280,17 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
     });
   };
 
-  // Share to Instagram (native share with image)
+  // Share to Instagram with IMAGE + MESSAGE
   const shareToInstagram = async () => {
     setIsGeneratingImage(true);
     try {
       const blob = await generateShareImage();
-      const file = new File([blob], "who-will-pay.png", { type: "image/png" });
+      const file = new File([blob], "who-will-pay-winner.png", { type: "image/png" });
 
       const viralMessage = getViralMessage();
-      const shareText = `${viralMessage}\n\n🎮 Try it yourself: https://whowillpay.netlify.app`;
+      const shareText = `${viralMessage}\n\n🎮 Try it yourself: https://whowillpaybill.netlify.app`;
 
+      // Try native share with image first (mobile)
       if (navigator.share && navigator.canShare) {
         const shareData = {
           files: [file],
@@ -291,15 +308,26 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
         }
       }
 
-      // Fallback: Download image
+      // Fallback: Download image and try to open Instagram
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "who-will-pay.png";
+      link.download = "who-will-pay-winner.png";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+
+      // Try to open Instagram app
+      setTimeout(() => {
+        // Instagram deep link (mobile)
+        window.location.href = "instagram://camera";
+
+        // Fallback message
+        setTimeout(() => {
+          alert("Image downloaded! Open Instagram and upload the image from your gallery 📸\n\nDon't forget to add this caption:\n" + shareText);
+        }, 1000);
+      }, 500);
 
       setUsedNativeShare(false);
       setShowCopied(true);
@@ -478,19 +506,19 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
                 </span>
               </motion.button>
 
-              {/* Twitter Share */}
+              {/* Snapchat Share */}
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={shareToTwitter}
+                onClick={shareToSnapchat}
                 disabled={isGeneratingImage}
-                className="px-4 py-4 bg-gradient-to-r from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex flex-col items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-4 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex flex-col items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span className="text-3xl">
-                  {isGeneratingImage ? "⏳" : "🐦"}
+                  {isGeneratingImage ? "⏳" : "👻"}
                 </span>
                 <span className="text-xs">
-                  {isGeneratingImage ? "Wait..." : "Twitter"}
+                  {isGeneratingImage ? "Wait..." : "Snapchat"}
                 </span>
               </motion.button>
             </div>
