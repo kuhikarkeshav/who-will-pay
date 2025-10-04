@@ -51,137 +51,14 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
     return template.replace("{name}", winner);
   };
 
-  // Share to WhatsApp with IMAGE + MESSAGE
-  const shareToWhatsApp = async () => {
-    setIsGeneratingImage(true);
-    try {
-      const blob = await generateShareImage();
-      const file = new File([blob], "who-will-pay-winner.png", { type: "image/png" });
-
-      const message = getViralMessage();
-      const fullMessage = `${message}\n\n🎮 Try it yourself: https://whowillpaybill.netlify.app`;
-
-      // Try native share with image first (mobile)
-      if (navigator.share && navigator.canShare) {
-        const shareData = {
-          files: [file],
-          text: fullMessage,
-        };
-
-        if (navigator.canShare(shareData)) {
-          await navigator.share(shareData);
-          setUsedNativeShare(true);
-          setShowCopied(true);
-          setTimeout(() => setShowCopied(false), 2000);
-          setIsGeneratingImage(false);
-          return;
-        }
-      }
-
-      // Fallback: Download image and open WhatsApp directly
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "who-will-pay-winner.png";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      // Open WhatsApp app directly with message
-      setTimeout(() => {
-        const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(fullMessage)}`;
-        window.location.href = whatsappUrl;
-
-        // Fallback to web WhatsApp if app not installed
-        setTimeout(() => {
-          window.open(`https://wa.me/?text=${encodeURIComponent(fullMessage)}`, "_blank");
-        }, 1000);
-      }, 500);
-
-      setUsedNativeShare(false);
-      setShowCopied(true);
-      setTimeout(() => setShowCopied(false), 3000);
-    } catch (error) {
-      console.error("WhatsApp share error:", error);
-      setShareError(true);
-      setTimeout(() => setShareError(false), 3000);
-    } finally {
-      setIsGeneratingImage(false);
-    }
-  };
-
-  // Share to Snapchat with IMAGE
-  const shareToSnapchat = async () => {
-    setIsGeneratingImage(true);
-    try {
-      const blob = await generateShareImage();
-      const file = new File([blob], "who-will-pay-winner.png", { type: "image/png" });
-
-      const message = getViralMessage();
-      const fullMessage = `${message}\n\n🎮 Play now: https://whowillpaybill.netlify.app`;
-
-      // Try native share with image first (mobile)
-      if (navigator.share && navigator.canShare) {
-        const shareData = {
-          files: [file],
-          text: fullMessage,
-        };
-
-        if (navigator.canShare(shareData)) {
-          await navigator.share(shareData);
-          setUsedNativeShare(true);
-          setShowCopied(true);
-          setTimeout(() => setShowCopied(false), 2000);
-          setIsGeneratingImage(false);
-          return;
-        }
-      }
-
-      // Fallback: Download image and try to open Snapchat
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "who-will-pay-winner.png";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      // Try to open Snapchat app
-      setTimeout(() => {
-        // Snapchat deep link (mobile)
-        window.location.href = "snapchat://";
-
-        // Fallback message
-        setTimeout(() => {
-          alert("Image downloaded! Open Snapchat and upload the image from your gallery 📸");
-        }, 1000);
-      }, 500);
-
-      setUsedNativeShare(false);
-      setShowCopied(true);
-      setTimeout(() => setShowCopied(false), 3000);
-    } catch (error) {
-      console.error("Snapchat share error:", error);
-      setShareError(true);
-      setTimeout(() => setShareError(false), 3000);
-    } finally {
-      setIsGeneratingImage(false);
-    }
-  };
-
   // Generate beautiful shareable image
   const generateShareImage = async (): Promise<Blob> => {
-    // Create a canvas for the share image
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d")!;
 
-    // Set canvas size (Instagram optimal: 1080x1080)
     canvas.width = 1080;
     canvas.height = 1080;
 
-    // Create gradient background (orange to yellow)
     const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
     gradient.addColorStop(0, "#FF6B35");
     gradient.addColorStop(0.5, "#F7931E");
@@ -189,12 +66,10 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw trophy emoji (large)
     ctx.font = "200px Arial";
     ctx.textAlign = "center";
     ctx.fillText("🏆", canvas.width / 2, 250);
 
-    // Draw "Winner Winner!" text
     ctx.font = "bold 80px Arial";
     ctx.fillStyle = "#FFFFFF";
     ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
@@ -203,7 +78,6 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
     ctx.shadowOffsetY = 3;
     ctx.fillText("Winner Winner!", canvas.width / 2, 350);
 
-    // Draw white rounded rectangle for winner name
     ctx.shadowColor = "transparent";
     ctx.fillStyle = "#FFFFFF";
     const rectWidth = 900;
@@ -225,7 +99,6 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
     ctx.closePath();
     ctx.fill();
 
-    // Draw winner name (purple gradient)
     const nameGradient = ctx.createLinearGradient(0, rectY + 60, 0, rectY + 140);
     nameGradient.addColorStop(0, "#A855F7");
     nameGradient.addColorStop(1, "#EC4899");
@@ -233,13 +106,10 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
     ctx.font = "bold 90px Arial";
     ctx.fillText(winner, canvas.width / 2, rectY + 120);
 
-    // Draw funny message
     ctx.fillStyle = "#333333";
     ctx.font = "600 45px Arial";
-    const message = randomMessage;
-    ctx.fillText(message, canvas.width / 2, rectY + rectHeight + 80);
+    ctx.fillText(randomMessage, canvas.width / 2, rectY + rectHeight + 80);
 
-    // Draw funny bottom message section
     ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
     const tryRectY = 850;
     const tryRectHeight = 150;
@@ -256,7 +126,6 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
     ctx.closePath();
     ctx.fill();
 
-    // Array of funny bottom messages
     const funnyBottomMessages = [
       "Better luck next time! 😂",
       "Thanks for being generous! 🙏",
@@ -267,17 +136,104 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
     ];
     const bottomMessage = funnyBottomMessages[Math.floor(Math.random() * funnyBottomMessages.length)];
 
-    // Draw funny message
     ctx.fillStyle = "#FF6B35";
     ctx.font = "bold 55px Arial";
     ctx.fillText(bottomMessage, canvas.width / 2, tryRectY + 95);
 
-    // Convert canvas to blob
     return new Promise((resolve) => {
       canvas.toBlob((blob) => {
         resolve(blob!);
       }, "image/png", 1.0);
     });
+  };
+
+  // Share to WhatsApp with IMAGE + MESSAGE
+  const shareToWhatsApp = async () => {
+    setIsGeneratingImage(true);
+    try {
+      const blob = await generateShareImage();
+      const file = new File([blob], "who-will-pay-winner.png", { type: "image/png" });
+
+      const message = getViralMessage();
+      const fullMessage = `${message}\n\n🎮 Try it yourself: https://whowillpaybill.netlify.app`;
+
+      // Try native share first (works best on mobile)
+      if (navigator.share) {
+        try {
+          // Most platforms don't support both files and text together
+          // So we share the file and copy text to clipboard
+          await navigator.share({
+            files: [file],
+          });
+          
+          // Copy message to clipboard for user to paste
+          try {
+            await navigator.clipboard.writeText(fullMessage);
+            alert("✅ Image shared successfully!\n\n📋 Message copied to clipboard - paste it in WhatsApp!\n\n" + fullMessage);
+          } catch (clipErr) {
+            alert("✅ Image shared successfully!\n\n📝 Copy this message and paste in WhatsApp:\n\n" + fullMessage);
+          }
+          
+          setUsedNativeShare(true);
+          setShowCopied(true);
+          setTimeout(() => setShowCopied(false), 2000);
+          setIsGeneratingImage(false);
+          return;
+        } catch (shareErr: any) {
+          if (shareErr.name === 'AbortError') {
+            // User cancelled the share
+            setIsGeneratingImage(false);
+            return;
+          }
+          // If share fails, continue to fallback
+        }
+      }
+
+      // Fallback: Download image and open WhatsApp with text
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "who-will-pay-winner.png";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      // Copy message to clipboard
+      try {
+        await navigator.clipboard.writeText(fullMessage);
+      } catch (clipErr) {
+        console.error("Clipboard error:", clipErr);
+      }
+
+      // Open WhatsApp with pre-filled message
+      setTimeout(() => {
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) {
+          // Mobile: Open WhatsApp app
+          window.location.href = `whatsapp://send?text=${encodeURIComponent(fullMessage)}`;
+          
+          // Alert user about the downloaded image
+          setTimeout(() => {
+            alert("✅ Image downloaded to your device!\n\n📲 WhatsApp opened with message - now attach the downloaded image!");
+          }, 500);
+        } else {
+          // Desktop: Open WhatsApp Web
+          window.open(`https://web.whatsapp.com/send?text=${encodeURIComponent(fullMessage)}`, "_blank");
+          alert("✅ Image downloaded!\n\n📲 WhatsApp Web opened with message - attach the downloaded image from your Downloads folder!");
+        }
+      }, 500);
+
+      setUsedNativeShare(false);
+      setShowCopied(true);
+      setTimeout(() => setShowCopied(false), 3000);
+    } catch (error) {
+      console.error("WhatsApp share error:", error);
+      setShareError(true);
+      setTimeout(() => setShareError(false), 3000);
+    } finally {
+      setIsGeneratingImage(false);
+    }
   };
 
   // Share to Instagram with IMAGE + MESSAGE
@@ -290,25 +246,27 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
       const viralMessage = getViralMessage();
       const shareText = `${viralMessage}\n\n🎮 Try it yourself: https://whowillpaybill.netlify.app`;
 
-      // Try native share with image first (mobile)
-      if (navigator.share && navigator.canShare) {
-        const shareData = {
-          files: [file],
-          title: "Who Will Pay the Bill? 🍕",
-          text: shareText,
-        };
-
-        if (navigator.canShare(shareData)) {
-          await navigator.share(shareData);
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: "Who Will Pay the Bill? 🍕",
+          });
+          await navigator.clipboard.writeText(shareText);
+          alert("📸 Image shared! Caption copied to clipboard - paste it in Instagram! 📋");
           setUsedNativeShare(true);
           setShowCopied(true);
           setTimeout(() => setShowCopied(false), 2000);
           setIsGeneratingImage(false);
           return;
+        } catch (shareErr: any) {
+          if (shareErr.name === 'AbortError') {
+            setIsGeneratingImage(false);
+            return;
+          }
         }
       }
 
-      // Fallback: Download image and try to open Instagram
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -318,22 +276,90 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      // Try to open Instagram app
-      setTimeout(() => {
-        // Instagram deep link (mobile)
-        window.location.href = "instagram://camera";
+      try {
+        await navigator.clipboard.writeText(shareText);
+      } catch (clipErr) {
+        console.error("Clipboard error:", clipErr);
+      }
 
-        // Fallback message
-        setTimeout(() => {
-          alert("Image downloaded! Open Instagram and upload the image from your gallery 📸\n\nDon't forget to add this caption:\n" + shareText);
-        }, 1000);
+      setTimeout(() => {
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) {
+          window.location.href = "instagram://camera";
+        }
       }, 500);
 
+      alert(`📸 Image downloaded! Caption copied to clipboard!\n\nOpen Instagram, upload the image, and paste this caption:\n\n${shareText}`);
       setUsedNativeShare(false);
       setShowCopied(true);
       setTimeout(() => setShowCopied(false), 3000);
     } catch (error) {
       console.error("Instagram share error:", error);
+      setShareError(true);
+      setTimeout(() => setShareError(false), 3000);
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+
+  // Share to Snapchat with IMAGE
+  const shareToSnapchat = async () => {
+    setIsGeneratingImage(true);
+    try {
+      const blob = await generateShareImage();
+      const file = new File([blob], "who-will-pay-winner.png", { type: "image/png" });
+
+      const message = getViralMessage();
+      const fullMessage = `${message}\n\n🎮 Play now: https://whowillpaybill.netlify.app`;
+
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            files: [file],
+          });
+          await navigator.clipboard.writeText(fullMessage);
+          alert("📸 Image shared! Message copied to clipboard - add it to your snap! 📋");
+          setUsedNativeShare(true);
+          setShowCopied(true);
+          setTimeout(() => setShowCopied(false), 2000);
+          setIsGeneratingImage(false);
+          return;
+        } catch (shareErr: any) {
+          if (shareErr.name === 'AbortError') {
+            setIsGeneratingImage(false);
+            return;
+          }
+        }
+      }
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "who-will-pay-winner.png";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      try {
+        await navigator.clipboard.writeText(fullMessage);
+      } catch (clipErr) {
+        console.error("Clipboard error:", clipErr);
+      }
+
+      setTimeout(() => {
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) {
+          window.location.href = "snapchat://";
+        }
+      }, 500);
+
+      alert(`📸 Image downloaded! Message copied to clipboard!\n\nOpen Snapchat, upload the image, and add this text:\n\n${fullMessage}`);
+      setUsedNativeShare(false);
+      setShowCopied(true);
+      setTimeout(() => setShowCopied(false), 3000);
+    } catch (error) {
+      console.error("Snapchat share error:", error);
       setShareError(true);
       setTimeout(() => setShareError(false), 3000);
     } finally {
@@ -351,13 +377,13 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
         stiffness: 200,
         damping: 20,
       }}
-      className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto"
     >
       <motion.div
         ref={cardRef}
         initial={{ y: 100, rotate: -10 }}
         animate={{ y: 0, rotate: 0 }}
-        className="bg-gradient-to-br from-yellow-400 via-orange-400 to-red-500 rounded-3xl p-8 sm:p-12 shadow-2xl max-w-lg w-full relative overflow-hidden"
+        className="bg-gradient-to-br from-yellow-400 via-orange-400 to-red-500 rounded-3xl p-8 sm:p-12 shadow-2xl max-w-lg w-full relative overflow-hidden my-8"
       >
         {/* Decorative elements */}
         <motion.div
@@ -457,23 +483,23 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
             transition={{ delay: 0.7 }}
             className="bg-gradient-to-r from-yellow-100 to-orange-100 rounded-xl p-4 mb-4 border-2 border-yellow-300"
           >
-            <p className="text-sm font-semibold text-orange-800 mb-2 flex items-center gap-2">
+            <p className="text-sm font-semibold text-orange-800 mb-2 flex items-center justify-center gap-2">
               <span className="text-xl">🎉</span>
               Share this hilarious moment!
             </p>
-            <p className="text-xs text-gray-700 italic">
+            <p className="text-xs text-gray-700 italic text-center">
               &ldquo;{getViralMessage()}&rdquo;
             </p>
           </motion.div>
 
+          {/* Platform Share Buttons */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8 }}
-            className="space-y-3"
+            className="mb-4"
           >
-            {/* Platform Share Buttons */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-3 mb-3">
               {/* WhatsApp Share */}
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -524,8 +550,7 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
             </div>
 
             {/* Success/Error Toasts */}
-            <div className="relative">
-
+            <div className="relative h-0">
               {/* Success Toast */}
               <AnimatePresence>
                 {showCopied && (
@@ -533,7 +558,7 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
                     initial={{ opacity: 0, y: 10, scale: 0.8 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -10, scale: 0.8 }}
-                    className="absolute -top-16 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-xl shadow-2xl font-semibold whitespace-nowrap"
+                    className="absolute -top-16 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-xl shadow-2xl font-semibold whitespace-nowrap z-50"
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-xl">🎉</span>
@@ -552,7 +577,7 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
                     initial={{ opacity: 0, y: 10, scale: 0.8 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -10, scale: 0.8 }}
-                    className="absolute -top-16 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-xl shadow-2xl font-semibold whitespace-nowrap"
+                    className="absolute -top-16 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-xl shadow-2xl font-semibold whitespace-nowrap z-50"
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-xl">❌</span>
@@ -562,39 +587,59 @@ export default function WinnerCard({ winner, billAmount }: WinnerCardProps) {
                 )}
               </AnimatePresence>
             </div>
+          </motion.div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => window.location.reload()}
-                className="px-8 py-3 bg-white text-purple-600 font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
-              >
-                🎲 Spin Again
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => window.location.reload()}
-                className="px-8 py-3 bg-purple-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
-              >
-                🔄 Start Over
-              </motion.button>
-            </div>
+          {/* Action Buttons */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.9 }}
+            className="flex flex-col sm:flex-row gap-3 justify-center mb-6"
+          >
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => window.location.reload()}
+              className="px-8 py-3 bg-white text-purple-600 font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
+            >
+              🎲 Spin Again
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => window.location.reload()}
+              className="px-8 py-3 bg-purple-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
+            >
+              🔄 Start Over
+            </motion.button>
           </motion.div>
 
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1 }}
-            className="mt-6 text-white/80 text-sm"
+            className="text-white/80 text-sm"
           >
             Better luck next time! 😄
           </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.2 }}
+            className="mt-4"
+          >
+            <a
+              href="https://whowillpaybill.netlify.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white/90 hover:text-white text-sm font-semibold underline decoration-2 underline-offset-4 transition-colors"
+            >
+              🎮 Try it yourself
+            </a>
+          </motion.div>
         </div>
       </motion.div>
     </motion.div>
   );
 }
-
